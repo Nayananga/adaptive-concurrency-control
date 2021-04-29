@@ -93,6 +93,9 @@ public class ThreadPoolSizeModifier implements Runnable {
 					.info(currentThreadPoolSize + ", " + currentTenSecondRate + ", " + rateDifference + ", "
 							+ currentInProgressCount + ", " + currentMeanLatency + ", " + current99PLatency); // Log
 																												// metrics
+			if(currentTenSecondRate <= 0.0) {
+				System.exit(0);
+			}
 
 			//System.out.println(INC_ITR + "," + INC_CHECK_ITR + "," + DEC_ITR + "," + DEC_CHECK_ITR);
 			if (optimizationAlgorithm.equals("T")) { // If Throughput Optimized

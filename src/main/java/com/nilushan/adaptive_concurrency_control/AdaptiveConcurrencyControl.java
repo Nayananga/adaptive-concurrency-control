@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 
 public class AdaptiveConcurrencyControl {
 
-	private static final int THREAD_POOL_MODIFICATION_INITIAL_DELAY = 10;
-	private static final int THREAD_POOL_MODIFICATION_PERIOD = 10;
+	private static final int THREAD_POOL_MODIFICATION_INITIAL_DELAY = 60;
+	private static final int THREAD_POOL_MODIFICATION_PERIOD = 60;
 	private static final int PORT = 15000;
 	public static Logger LOGGER = LoggerFactory.getLogger(AdaptiveConcurrencyControl.class);
 

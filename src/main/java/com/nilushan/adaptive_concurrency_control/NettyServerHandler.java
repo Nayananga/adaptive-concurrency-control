@@ -25,18 +25,21 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
 	private String testName;
 	private CustomThreadPool executingPool;
-	private Timer.Context timerContext;
 
-	public NettyServerHandler(String name, CustomThreadPool pool, Timer.Context tContext) {
+	public NettyServerHandler(String name, CustomThreadPool pool) {
 		this.testName = name;
 		this.executingPool = pool;
-		this.timerContext = tContext;
 	}
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
+		Timer.Context timerContext = ThreadPoolSizeModifier.LATENCY_TIMER.time();
 
-		if (testName.equals("Prime1m")) {
+		if (testName.equals("Prime10k")) {
+			executingPool.submitTask(new Prime10k(ctx, msg, timerContext));
+		} else if (testName.equals("Prime100k")) {
+			executingPool.submitTask(new Prime100k(ctx, msg, timerContext));
+		} else if (testName.equals("Prime1m")) {
 			executingPool.submitTask(new Prime1m(ctx, msg, timerContext));
 		} else if (testName.equals("Prime10m")) {
 			executingPool.submitTask(new Prime10m(ctx, msg, timerContext));
@@ -44,6 +47,10 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
 			executingPool.submitTask(new DbWrite(ctx, msg, timerContext));
 		} else if (testName.equals("DbRead")) {
 			executingPool.submitTask(new DbRead(ctx, msg, timerContext));
+		} else if (testName.equals("Sqrt")) {
+			executingPool.submitTask(new Sqrt(ctx, msg, timerContext));
+		} else if (testName.equals("Factorial")) {
+			executingPool.submitTask(new Factorial(ctx, msg, timerContext));
 		}
 	}
 

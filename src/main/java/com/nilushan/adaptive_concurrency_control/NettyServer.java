@@ -19,7 +19,6 @@ public class NettyServer {
 	int port;
 	String test;
 	CustomThreadPool executingPool;
-	Timer.Context latencyTimerContext;
 
 	public NettyServer(int portNum, String testName, CustomThreadPool pool) {
 		this.port = portNum;
@@ -40,11 +39,10 @@ public class NettyServer {
 
 						@Override
 						public void initChannel(SocketChannel ch) throws Exception {
-							latencyTimerContext = ThreadPoolSizeModifier.LATENCY_TIMER.time();
 							ChannelPipeline p = ch.pipeline();
 							p.addLast(new HttpServerCodec());
 							p.addLast("aggregator", new HttpObjectAggregator(1048576));
-							p.addLast(new NettyServerHandler(test, executingPool, latencyTimerContext));
+							p.addLast(new NettyServerHandler(test, executingPool));
 						}
 					}).option(ChannelOption.SO_BACKLOG, 1000000).childOption(ChannelOption.SO_KEEPALIVE, true);
 
