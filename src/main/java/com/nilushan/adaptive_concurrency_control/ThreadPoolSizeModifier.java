@@ -63,7 +63,7 @@ public class ThreadPoolSizeModifier implements Runnable {
 		DEC_IMPROVED = true;
 		resetMemory = 600;
 		AdaptiveConcurrencyControl.LOGGER.info(
-				"Thread pool size, Current 10 Second Throughput, Throughput Difference, In pogress count, Average Latency, 99th percentile Latency"); // First
+				"Thread pool size, Current 10 Second Throughput, Throughput Difference, In pogress count, Average Latency, 99th percentile Latency, Concurrency"); // First
 																																						// line
 																																						// of
 																																						// the
@@ -89,9 +89,11 @@ public class ThreadPoolSizeModifier implements Runnable {
 			double current99PLatency = latencySnapshot.get99thPercentile() / 1000000; // Divided by 1000000 to convert
 																						// the
 																						// time to ms
+			int concurrency = StatusData.getActiveConnectionCounter();
+
 			AdaptiveConcurrencyControl.LOGGER
 					.info(currentThreadPoolSize + ", " + currentTenSecondRate + ", " + rateDifference + ", "
-							+ currentInProgressCount + ", " + currentMeanLatency + ", " + current99PLatency); // Log
+							+ currentInProgressCount + ", " + currentMeanLatency + ", " + current99PLatency + ", " + concurrency); // Log
 																												// metrics
 			if(currentTenSecondRate <= 0.0) {
 				System.exit(0);
