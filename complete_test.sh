@@ -21,7 +21,7 @@ for ConcurrencyPlan in ${ConcurrencyPlanArray[*]}
         docker run --publish 3306:3306 --name db_Server -d --net myNet --ip 192.168.1.6 --cpus=1 nayanagamuhandiram/mysql_service
 
         echo "$TestName"
-        docker run --publish 15000:15000 --name initial_experiments -d --net myNet --ip 192.168.1.4 --volume /home/nayananga/output/initial_experiments/DbWrite/"$ConcurrencyPlan":/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control:initial_exp java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar "$TestName" 10 99P
+        docker run --publish 15000:15000 --name initial_experiments -d --net myNet --ip 192.168.1.4 --volume /home/nayananga/output/initial_experiments/"$TestName"/"$ConcurrencyPlan":/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control:initial_exp java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar "$TestName" 10 99P
         docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t "$ConcurrencyPlan".jmx -q user.properties
         sleep 1200
         docker container kill jmeter_service initial_experiments
