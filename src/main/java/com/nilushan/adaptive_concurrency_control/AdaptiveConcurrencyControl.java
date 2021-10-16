@@ -21,15 +21,9 @@ public class AdaptiveConcurrencyControl {
 		}
 		String testName = args[0];
 		int initWorkerThreads = Integer.parseInt(args[1]);
-		String optimization = args[2]; // T=Throughput Optimized, M=Mean latency Optimized, 99P=99th Percentile of
-										// latency optimized
-		ScheduledExecutorService threadPoolSizeModifier = Executors.newScheduledThreadPool(1); // Create the thread pool
-																								// to run the periodic
-																								// thread count
-																								// adjustment
-		CustomThreadPool thirdThreadPool = new CustomThreadPool(initWorkerThreads); // Create the thread pool to handle
-																					// workload processing
-		threadPoolSizeModifier.scheduleAtFixedRate(new ThreadPoolSizeModifier(thirdThreadPool, optimization),
+		ScheduledExecutorService threadPoolSizeModifier = Executors.newScheduledThreadPool(1);
+		CustomThreadPool thirdThreadPool = new CustomThreadPool(initWorkerThreads);
+		threadPoolSizeModifier.scheduleAtFixedRate(new ThreadPoolSizeModifier(thirdThreadPool),
 				THREAD_POOL_MODIFICATION_INITIAL_DELAY, THREAD_POOL_MODIFICATION_PERIOD, TimeUnit.SECONDS);
 		new NettyServer(PORT, testName, thirdThreadPool).start();
 

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+docker pull nayanagamuhandiram/mysql_service
+docker pull nayanagamuhandiram/jmeter_service
+docker pull nayanagamuhandiram/java_service
+docker pull nayanagamuhandiram/python_service:hpc_testing_5
+docker pull nayanagamuhandiram/python_service:hpc_testing_4
 docker pull nayanagamuhandiram/python_service:hpc_testing_3
 
 docker container kill db_Server some-redis tuner java_service jmeter_service
