@@ -1,88 +1,47 @@
 #!/bin/bash
 
-docker container kill db_Server nilushan_service jmeter_service
+docker pull nayanagamuhandiram/mysql_service
+docker pull nayanagamuhandiram/jmeter_service
+docker pull nayanagamuhandiram/adaptive-concurrency-control:latest
+
+docker container kill db_Server jmeter_service initial_experiments some-redis tuner_service java_service adapt-t_service
 docker container prune -f
 
 docker network prune -f
 docker network create --subnet=192.168.1.0/24 myNet
 
-## Spawn mysql db server
-#docker run --publish 3306:3306 --name db_Server -d --net myNet --ip 192.168.1.6 --cpus=1 nayanagamuhandiram/mysql_service
+declare -a TestNameArray=("DbRead")
+declare -a ConcurrencyPlanArray=("1_concurrency" "10_concurrency" "50_concurrency" "increase_and_decrease" "one_step_function" "random" "step_increase_fucntion" "up_down_function" "peaks")
 
-## Prime
+for TestName in ${TestNameArray[*]}; do
+  echo "$TestName"
+  if [[ "$TestName" == "DbRead" ]]; then
+    echo "im inside first if statement"
+    docker run --publish 3306:3306 --name db_Server -d --net myNet --ip 192.168.1.6 --cpus=1 nayanagamuhandiram/mysql_service
+    sleep 15
+    docker run --publish 15000:15000 --name initial_experiments -d --net myNet --ip 192.168.1.4 --cpus=1 nayanagamuhandiram/adaptive-concurrency-control:initial_exp java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar DbWrite 10 99P
+    docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t 1_concurrency.jmx -q user.properties
+    sleep 60
+    docker container kill jmeter_service initial_experiments
+    docker container prune -f
+  fi
+  for ConcurrencyPlan in ${ConcurrencyPlanArray[*]}; do
+    echo "$ConcurrencyPlan"
+    if [[ "$TestName" == "DbWrite" ]]; then
+      echo "im inside second if statement"
+      docker run --publish 3306:3306 --name db_Server -d --net myNet --ip 192.168.1.6 --cpus=1 nayanagamuhandiram/mysql_service
+      sleep 1
+    fi
+    docker run --publish 15000:15000 --name adapt-t_service -d --net myNet --ip 192.168.1.4 --volume /home/nayananga/output/nilushan/"$TestName"/"$ConcurrencyPlan":/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control:latest java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar "$TestName" 10 99P
+    docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t "$ConcurrencyPlan".jmx -q user.properties
+    sleep 1200
+    docker container kill jmeter_service adapt-t_service
+    if [[ "$TestName" == "DbWrite" ]]; then
+      echo "im inside third if statement"
+      docker container kill db_Server
+    fi
+    docker container prune -f
+  done
+done
 
-#nilushan
-
-##Concurrency 1
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/Prime1m_1:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t 1_concurrency.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/Prime1m_1.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-##Concurrency 10
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/Prime1m_10:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t 10_concurrency.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/Prime1m_10.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-##Concurrency 50
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/Prime1m_50:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t 50_concurrency.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/Prime1m_50.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-#increase_and_decrease
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/increase_and_decrease:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t increase_and_decrease.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/increase_and_decrease.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-#one_step_function
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/one_step_function:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t one_step_function.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/one_step_function.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-#random
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/random:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t random.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/random.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-#step_increase_fucntion
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/step_increase_fucntion:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t step_increase_fucntion.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/step_increase_function.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-#up_down_function
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/up_down_function:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t up_down_function.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/up_down_function.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-#peaks
-
-docker run --publish 15000:15000 --name nilushan_service -d --net myNet --ip 192.168.1.4 --volume /home/dcs2016csc036/nayananga/output_1/nilushan/peaks:/home/log --cpus=1 nayanagamuhandiram/adaptive-concurrency-control java -jar adaptive-concurrency-control-1.0-SNAPSHOT-jar-with-dependencies.jar Prime1m 10 99P
-docker run --name jmeter_service -d --net myNet --ip 192.168.1.5 --volume /home/dcs2016csc036/nayananga/jmeter_results/nilushan:/opt/apache-jmeter-5.2.1/jmeter_results --cpus=1 nayanagamuhandiram/jmeter_service java -jar bin/ApacheJMeter.jar -n -t peaks.jmx -q user.properties -l /opt/apache-jmeter-5.2.1/jmeter_results/peaks.jtl
-sleep 1200
-docker container kill jmeter_service nilushan_service
-docker container prune -f
-
-exit 
+exit
